@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include <map>
+#include <vector>
 #include <memory>
 
 namespace EK
@@ -64,6 +64,8 @@ public:
 
 public:
 	Map();
+	Map( const std::vector<std::pair<int, std::string>>& );
+	Map( const std::initializer_list<std::pair<int, std::string>>& );
 	~Map();
 
 	std::size_t count( int key ) const;
@@ -71,6 +73,7 @@ public:
 	std::size_t size() const;
 
 	void insert( int key, const std::string& value );
+	void insert( const std::pair<int, std::string>& key_value_pair );
 	void erase( int key );
 
 	Iterator begin();

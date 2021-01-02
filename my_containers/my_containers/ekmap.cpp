@@ -180,18 +180,25 @@ Map::Map()
 	root_ = nullptr;
 }
 
+Map::Map( const std::vector<std::pair<int, std::string>>& v )
+{
+	for ( auto& pair : v )
+	{
+		insert( pair );
+	}
+}
+
+Map::Map( const std::initializer_list<std::pair<int, std::string>>& list )
+{
+	for ( auto& pair : list )
+	{
+		insert( pair );
+	}
+}
+
 Map::~Map()
 {
 }
-
-Map::Iterator Map::begin() { return Iterator( get_minimum_() ); }
-Map::Iterator Map::end() { return Iterator( nullptr ); }
-Map::Iterator Map::rbegin() { return Iterator( get_maximum_() ); }
-Map::Iterator Map::rend() { return Iterator( nullptr ); }
-Map::ConstIterator Map::begin() const { return ConstIterator( get_minimum_() ); }
-Map::ConstIterator Map::end() const { return ConstIterator( nullptr ); }
-Map::ConstIterator Map::rbegin() const { return ConstIterator( get_maximum_() ); }
-Map::ConstIterator Map::rend() const { return ConstIterator( nullptr ); }
 
 Map::Iterator Map::begin()
 {
@@ -310,6 +317,11 @@ void Map::insert( int key, const std::string& value )
 			current = current->right;
 		}
 	}
+}
+
+void Map::insert( const std::pair<int, std::string>& key_value_pair )
+{
+	insert( key_value_pair.first, key_value_pair.second );
 }
 
 MapNode * Map::get_minimum_() const
