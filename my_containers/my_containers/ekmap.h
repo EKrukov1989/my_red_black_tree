@@ -6,63 +6,11 @@
 namespace EK
 {
 
-struct MapNode
-{
-	MapNode * parent = nullptr;
-	MapNode * left = nullptr;
-	MapNode * right = nullptr;
-	bool is_black = true; // true - black, false - red
-	std::string value;
-	int key = 0;
-
-	MapNode() = default;
-
-	MapNode( MapNode * parent, MapNode * left, MapNode * right,
-			 int key, bool is_black, const std::string& value )
-	{
-		this->parent = parent;
-		this->left = left;
-		this->right = right;
-		this->key = key;
-		this->is_black = is_black;
-		this->value = value;
-	}
-};
-
 class Map
 {
 public:
-	class Iterator
-	{
-		friend class Map;
-	public:
-		Iterator& operator++();
-		Iterator& operator--();
-		bool operator==( Iterator other ) const;
-		bool operator!=( Iterator other ) const;
-		std::pair<int, std::string&> operator*();
-		std::unique_ptr<std::pair<int, std::string&>> operator->();
-	private:
-		explicit Iterator( MapNode * node );
-		MapNode * node_ = nullptr;
-	};
-
-	class ConstIterator
-	{
-		friend class Map;
-	public:
-		ConstIterator& operator++();
-		ConstIterator& operator--();
-		bool operator==( ConstIterator other ) const;
-		bool operator!=( ConstIterator other ) const;
-		std::pair<int, const std::string&> operator*();
-		std::unique_ptr<std::pair<int, const std::string&>> operator->();
-	private:
-		explicit ConstIterator( const MapNode * node );
-		const MapNode * node_ = nullptr;
-	};
-
-public:
+	class Iterator;
+	class CIterator;
 	Map();
 	Map( const std::vector<std::pair<int, std::string>>& );
 	Map( const std::initializer_list<std::pair<int, std::string>>& );
@@ -80,23 +28,46 @@ public:
 	Iterator end();
 	Iterator rbegin();
 	Iterator rend();
-	ConstIterator begin() const;
-	ConstIterator end() const;
-	ConstIterator rbegin() const;
-	ConstIterator rend() const;
+	CIterator begin() const;
+	CIterator end() const;
+	CIterator rbegin() const;
+	CIterator rend() const;
 
-	std::string get_debug_output();
-	std::string check_rb_tree();
+	std::string get_debug_output() const;
+	std::string check_red_black_tree_properties() const;
+	unsigned get_black_height() const;
 
 private:
-	MapNode * root_ = nullptr;
+	struct Node;
+	class InternIter;
+	class CInternIter;
+	Node * root_ = nullptr;
 	std::size_t counter = 0;
 
-	MapNode * find_( int key ) const;
-	MapNode * get_minimum_() const;
-	MapNode * get_maximum_() const;
-	void transplant_( const MapNode * target, MapNode * to_transplant );
-	std::string format_line_( const MapNode * ) const;
+	Node * find_( int key ) const;
+	Node * get_minimum_() const;
+	Node * get_maximum_() const;
+	void transplant_( const Node * target, Node * to_transplant );
+	std::string format_line_( const Node * ) const;
+
+	InternIter ibegin();
+	InternIter iend();
+	InternIter irbegin();
+	InternIter irend();
+	CInternIter ibegin() const;
+	CInternIter iend() const;
+	CInternIter irbegin() const;
+	CInternIter irend() const;
+
+	static const Node * s_find_successor_in_right_branch_( const Node * node );
+	static const Node * s_find_predecessor_in_left_branch_( const Node * node );
+	static const Node * s_find_successor_( const Node * node );
+	static const Node * s_find_predecessor_( const Node * node );
+	static Node * s_find_successor_( Node * node );
+	static Node * s_find_predecessor_( Node * node );
+
+	std::string check_red_black_tree_property_4_() const;
+	std::string check_red_black_tree_property_5_() const;
 };
 
 } // namespace EK

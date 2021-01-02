@@ -2,85 +2,54 @@
 #include <cstdio>
 #include <stdexcept>
 
-namespace
-{
-
-const EK::MapNode * s_find_successor_in_right_branch_( const EK::MapNode * node )
-{
-	if ( node->right == nullptr )
-	{
-		return nullptr;
-	}
-	auto current = node->right;
-	while ( current->left != nullptr )
-	{
-		current = current->left;
-	}
-	return current;
-}
-
-const EK::MapNode * s_find_predecessor_in_left_branch_( const EK::MapNode * node )
-{
-	if ( node->left == nullptr )
-	{
-		return nullptr;
-	}
-	auto current = node->left;
-	while ( current->right != nullptr )
-	{
-		current = current->right;
-	}
-	return current;
-}
-
-const EK::MapNode * s_find_successor_( const EK::MapNode * node )
-{
-	auto current = s_find_successor_in_right_branch_( node );
-	if ( current == nullptr )
-	{
-		current = node;
-		while ( current != nullptr && current->key <= node->key )
-		{
-			current = current->parent;
-		}
-	}
-	return current;
-}
-
-EK::MapNode * s_find_successor_( EK::MapNode * node )
-{
-	return const_cast<EK::MapNode *>( s_find_successor_( static_cast<const EK::MapNode *>( node ) ) );
-}
-
-const EK::MapNode * s_find_predecessor_( const EK::MapNode * node )
-{
-	auto current = s_find_predecessor_in_left_branch_( node );
-	if ( current == nullptr )
-	{
-		current = node;
-		while ( current != nullptr && current->key >= node->key )
-		{
-			current = current->parent;
-		}
-	}
-	return current;
-}
-
-EK::MapNode * s_find_predecessor_( EK::MapNode * node )
-{
-	return const_cast<EK::MapNode *>( s_find_predecessor_( static_cast<const EK::MapNode *>( node ) ) );
-}
-
-} // nameless namespace
-
 namespace EK
 {
 
-Map::Iterator::Iterator( MapNode * node ) : node_( node )
+struct Map::Node
+{
+	Node * parent = nullptr;
+	Node * left = nullptr;
+	Node * right = nullptr;
+	bool is_black = true; // true - black, false - red
+	std::string value;
+	int key = 0;
+
+	Node() = default;
+
+	Node( Node * parent, Node * left, Node * right,
+			 int key, bool is_black, const std::string& value )
+	{
+		this->parent = parent;
+		this->left = left;
+		this->right = right;
+		this->key = key;
+		this->is_black = is_black;
+		this->value = value;
+	}
+};
+
+class Map::InternIter
+{
+// Internal interator provides access to nodes directly.
+// It's required for a few private methods.
+// Also it is a basis for external iterators.
+public:
+	explicit InternIter( Node * );
+	InternIter& operator++();
+	InternIter& operator--();
+	bool operator==( InternIter ) const;
+	bool operator!=( InternIter ) const;
+	Map::Node& operator*();
+	Map::Node * operator->();
+private:
+	Node * node_ = nullptr;
+};
+
+Map::InternIter::InternIter( Node * node ) : node_( node )
 {
 }
 
-Map::Iterator& Map::Iterator::operator++()
+Map::InternIter& Map::InternIter::operator++()
 {
 	if ( node_ != nullptr )
 	{
@@ -89,7 +58,7 @@ Map::Iterator& Map::Iterator::operator++()
 	return *this;
 }
 
-Map::Iterator& Map::Iterator::operator--()
+Map::InternIter& Map::InternIter::operator--()
 {
 	if ( node_ != nullptr )
 	{
@@ -98,38 +67,52 @@ Map::Iterator& Map::Iterator::operator--()
 	return *this;
 }
 
-bool Map::Iterator::operator==( Map::Iterator other ) const
+bool Map::InternIter::operator==( Map::InternIter other ) const
 {
 	return node_ == other.node_;
 }
-bool Map::Iterator::operator!=( Map::Iterator other ) const
+bool Map::InternIter::operator!=( Map::InternIter other ) const
 {
 	return !( *this == other );
 }
 
-std::pair<int, std::string&> Map::Iterator::operator*()
+Map::Node& Map::InternIter::operator*()
 {
 	if ( node_ == nullptr )
 	{
 		throw std::length_error( "Iterator is out of range." );
 	}
-	return { node_->key, node_->value };
+	return *node_;
 }
 
-std::unique_ptr<std::pair<int, std::string&>> Map::Iterator::operator->()
+Map::Node * Map::InternIter::operator->()
 {
 	if ( node_ == nullptr )
 	{
 		throw std::length_error( "Iterator is out of range." );
 	}
-	return std::make_unique<std::pair<int, std::string&>>( node_->key, node_->value );
+	return node_;
 }
 
-Map::ConstIterator::ConstIterator( const MapNode * node ) : node_( node )
+class Map::CInternIter
+{
+public:
+	explicit CInternIter( Node * );
+	CInternIter& operator++();
+	CInternIter& operator--();
+	bool operator==( CInternIter ) const;
+	bool operator!=( CInternIter ) const;
+	Map::Node& operator*();
+	Map::Node * operator->();
+private:
+	Node * node_ = nullptr;
+};
+
+Map::CInternIter::CInternIter( Node * node ) : node_( node )
 {
 }
 
-Map::ConstIterator& Map::ConstIterator::operator++()
+Map::CInternIter& Map::CInternIter::operator++()
 {
 	if ( node_ != nullptr )
 	{
@@ -138,7 +121,7 @@ Map::ConstIterator& Map::ConstIterator::operator++()
 	return *this;
 }
 
-Map::ConstIterator& Map::ConstIterator::operator--()
+Map::CInternIter& Map::CInternIter::operator--()
 {
 	if ( node_ != nullptr )
 	{
@@ -147,33 +130,68 @@ Map::ConstIterator& Map::ConstIterator::operator--()
 	return *this;
 }
 
-bool Map::ConstIterator::operator==( Map::ConstIterator other ) const
+bool Map::CInternIter::operator==( Map::CInternIter other ) const
 {
 	return node_ == other.node_;
 }
-
-bool Map::ConstIterator::operator!=( Map::ConstIterator other ) const
+bool Map::CInternIter::operator!=( Map::CInternIter other ) const
 {
 	return !( *this == other );
 }
 
-std::pair<int, const std::string&> Map::ConstIterator::operator*()
+Map::Node& Map::CInternIter::operator*()
 {
 	if ( node_ == nullptr )
 	{
 		throw std::length_error( "Iterator is out of range." );
 	}
-	return { node_->key, node_->value };
+	return *node_;
 }
 
-std::unique_ptr<std::pair<int, const std::string&>> Map::ConstIterator::operator->()
+Map::Node * Map::CInternIter::operator->()
 {
 	if ( node_ == nullptr )
 	{
 		throw std::length_error( "Iterator is out of range." );
 	}
-	return std::make_unique<std::pair<int, const std::string&>>( node_->key, node_->value );
+	return node_;
 }
+
+class Map::Iterator
+{
+	friend class Map;
+public:
+	Iterator& operator++() { ++iter_; return *this; }
+	Iterator& operator--() { --iter_; return *this; }
+	bool operator==( Iterator other ) const { return iter_ == other.iter_; }
+	bool operator!=( Iterator other ) const { return !( *this == other ); }
+	std::pair<int, std::string&> operator*() { return { iter_->key, iter_->value }; };
+	std::unique_ptr<std::pair<int, std::string&>> operator->()
+	{
+		return std::make_unique<std::pair<int, std::string&>>( iter_->key, iter_->value );
+	}
+private:
+	InternIter iter_;
+	explicit Iterator( InternIter intern_iter ) : iter_( intern_iter ) {}
+};
+
+class Map::CIterator
+{
+	friend class Map;
+public:
+	CIterator& operator++() { ++iter_; return *this; }
+	CIterator& operator--() { --iter_; return *this; }
+	bool operator==( CIterator other ) const { return iter_ == other.iter_; }
+	bool operator!=( CIterator other ) const { return !( *this == other ); }
+	std::pair<int, const std::string&> operator*() { return { iter_->key, iter_->value }; };
+	std::unique_ptr<std::pair<int, const std::string&>> operator->()
+	{
+		return std::make_unique<std::pair<int, const std::string&>>( iter_->key, iter_->value );
+	}
+private:
+	CInternIter iter_;
+	explicit CIterator( CInternIter iter ) : iter_( iter ) {}
+};
 
 Map::Map()
 {
@@ -200,45 +218,23 @@ Map::~Map()
 {
 }
 
-Map::Iterator Map::begin()
-{
-	return Iterator( get_minimum_() );
-}
+Map::InternIter Map::ibegin() { return InternIter( get_minimum_() ); }
+Map::InternIter Map::iend() { return InternIter( nullptr ); }
+Map::InternIter Map::irbegin() { return InternIter( get_maximum_() ); }
+Map::InternIter Map::irend() { return InternIter( nullptr ); }
+Map::CInternIter Map::ibegin() const { return CInternIter( get_minimum_() ); }
+Map::CInternIter Map::iend() const { return CInternIter( nullptr ); }
+Map::CInternIter Map::irbegin() const { return CInternIter( get_maximum_() ); }
+Map::CInternIter Map::irend() const { return CInternIter( nullptr ); }
 
-Map::Iterator Map::end()
-{
-	return Iterator( nullptr );
-}
-
-Map::Iterator Map::rbegin()
-{
-	return Iterator( get_maximum_() );
-}
-
-Map::Iterator Map::rend()
-{
-	return Iterator( nullptr );
-}
-
-Map::ConstIterator Map::begin() const
-{
-	return ConstIterator( get_minimum_() );
-}
-
-Map::ConstIterator Map::end() const
-{
-	return ConstIterator( nullptr );
-}
-
-Map::ConstIterator Map::rbegin() const
-{
-	return ConstIterator( get_maximum_() );
-}
-
-Map::ConstIterator Map::rend() const
-{
-	return ConstIterator( nullptr );
-}
+Map::Iterator Map::begin() { return Iterator( ibegin() ); }
+Map::Iterator Map::end() { return Iterator( iend() ); }
+Map::Iterator Map::rbegin() { return Iterator( irbegin() ); }
+Map::Iterator Map::rend() { return Iterator( irend() ); }
+Map::CIterator Map::begin() const { return CIterator( ibegin() ); }
+Map::CIterator Map::end() const { return CIterator( iend() ); }
+Map::CIterator Map::rbegin() const { return CIterator( irbegin() ); }
+Map::CIterator Map::rend() const { return CIterator( irend() ); }
 
 std::size_t Map::count( int key ) const
 {
@@ -263,7 +259,7 @@ std::size_t Map::size() const
 	return counter;
 }
 
-MapNode * Map::find_( int key ) const
+Map::Node * Map::find_( int key ) const
 {
 	auto current = root_;
 	while ( current != nullptr && current->key != key )
@@ -277,7 +273,7 @@ void Map::insert( int key, const std::string& value )
 {
 	if ( root_ == nullptr )
 	{
-		auto newNode = new MapNode( nullptr, nullptr, nullptr,
+		auto newNode = new Node( nullptr, nullptr, nullptr,
 									key, true, value );
 		root_ = newNode;
 		++counter;
@@ -296,7 +292,7 @@ void Map::insert( int key, const std::string& value )
 		{
 			if ( current->left == nullptr )
 			{
-				auto newNode = new MapNode( current, nullptr, nullptr,
+				auto newNode = new Node( current, nullptr, nullptr,
 											key, true, value );
 				current->left = newNode;
 				++counter;
@@ -308,7 +304,7 @@ void Map::insert( int key, const std::string& value )
 		{
 			if ( current->right == nullptr )
 			{
-				auto newNode = new MapNode( current, nullptr, nullptr,
+				auto newNode = new Node( current, nullptr, nullptr,
 											key, true, value );
 				current->right = newNode;
 				++counter;
@@ -324,7 +320,7 @@ void Map::insert( const std::pair<int, std::string>& key_value_pair )
 	insert( key_value_pair.first, key_value_pair.second );
 }
 
-MapNode * Map::get_minimum_() const
+Map::Node * Map::get_minimum_() const
 {
 	if ( root_ == nullptr )
 	{
@@ -339,7 +335,7 @@ MapNode * Map::get_minimum_() const
 	return current;
 }
 
-MapNode * Map::get_maximum_() const
+Map::Node * Map::get_maximum_() const
 {
 	if ( root_ == nullptr )
 	{
@@ -354,36 +350,7 @@ MapNode * Map::get_maximum_() const
 	return current;
 }
 
-std::string Map::get_debug_output()
-{
-	std::string result;
-	auto current = get_minimum_();
-
-	while ( current != nullptr )
-	{
-		result += format_line_( current ) + '\n';
-		current = s_find_successor_( current );
-	}
-	return result;
-}
-
-std::string Map::format_line_( const MapNode * node ) const
-{
-	auto k = std::to_string( node->key );
-	auto p = ( node->parent != nullptr ) ? std::to_string( node->parent->key ) : "nul";
-	auto l = ( node->left != nullptr ) ? std::to_string( node->left->key ) : "nul";
-	auto r = ( node->right != nullptr ) ? std::to_string( node->right->key ) : "nul";
-	auto c = ( node->is_black ) ? "B" : "R";
-	auto v = ( node->value.length() < 10 ) ? node->value : node->value.substr( 10 );
-
-	char line[80];
-	sprintf_s( line, "K=%-3s PK=%-3s LK=%-3s RK=%-3s C=%s V=%s",
-			   k.data(), p.data(), l.data(), r.data(), c, v.data() );
-	auto result = std::string( line );
-	return result;
-}
-
-void Map::transplant_( const MapNode * target, MapNode * to_transplant )
+void Map::transplant_( const Node * target, Node * to_transplant )
 {
 	if ( target->parent == nullptr )
 	{
@@ -400,17 +367,6 @@ void Map::transplant_( const MapNode * target, MapNode * to_transplant )
 		target->parent->right = to_transplant;
 	}
 	to_transplant->parent = target->parent;
-}
-
-MapNode * find_successor_in_right_branch_( MapNode * node )
-{
-	// failed
-	auto current = node->right;
-	while ( current->left != nullptr )
-	{
-		current = current->left;
-	}
-	return current;
 }
 
 void Map::erase( int key )
@@ -471,7 +427,167 @@ void Map::erase( int key )
 	//}
 }
 
-std::string Map::check_rb_tree()
+const Map::Node * Map::s_find_successor_in_right_branch_( const Node * node )
+{
+	if ( node->right == nullptr )
+	{
+		return nullptr;
+	}
+	auto current = node->right;
+	while ( current->left != nullptr )
+	{
+		current = current->left;
+	}
+	return current;
+}
+
+const Map::Node * Map::s_find_predecessor_in_left_branch_( const Node * node )
+{
+	if ( node->left == nullptr )
+	{
+		return nullptr;
+	}
+	auto current = node->left;
+	while ( current->right != nullptr )
+	{
+		current = current->right;
+	}
+	return current;
+}
+
+const Map::Node * Map::s_find_successor_( const Node * node )
+{
+	auto current = s_find_successor_in_right_branch_( node );
+	if ( current == nullptr )
+	{
+		current = node;
+		while ( current != nullptr && current->key <= node->key )
+		{
+			current = current->parent;
+		}
+	}
+	return current;
+}
+
+Map::Node * Map::s_find_successor_( Node * node )
+{
+	return const_cast<Node *>( s_find_successor_( static_cast<const Node *>( node ) ) );
+}
+
+const Map::Node * Map::s_find_predecessor_( const Node * node )
+{
+	auto current = s_find_predecessor_in_left_branch_( node );
+	if ( current == nullptr )
+	{
+		current = node;
+		while ( current != nullptr && current->key >= node->key )
+		{
+			current = current->parent;
+		}
+	}
+	return current;
+}
+
+Map::Node * Map::s_find_predecessor_( Node * node )
+{
+	return const_cast<Node *>( s_find_predecessor_( static_cast<const Node *>( node ) ) );
+}
+
+std::string Map::get_debug_output() const
+{
+	std::string result;
+	auto current = get_minimum_();
+
+	while ( current != nullptr )
+	{
+		result += format_line_( current ) + '\n';
+		current = s_find_successor_( current );
+	}
+	return result;
+}
+
+std::string Map::format_line_( const Node * node ) const
+{
+	auto k = std::to_string( node->key );
+	auto p = ( node->parent != nullptr ) ? std::to_string( node->parent->key ) : "nul";
+	auto l = ( node->left != nullptr ) ? std::to_string( node->left->key ) : "nul";
+	auto r = ( node->right != nullptr ) ? std::to_string( node->right->key ) : "nul";
+	auto c = ( node->is_black ) ? "B" : "R";
+	auto v = ( node->value.length() < 10 ) ? node->value : node->value.substr( 10 );
+
+	char line[80];
+	sprintf_s( line, "K=%-3s PK=%-3s LK=%-3s RK=%-3s C=%s V=%s",
+			   k.data(), p.data(), l.data(), r.data(), c, v.data() );
+	auto result = std::string( line );
+	return result;
+}
+
+std::string Map::check_red_black_tree_property_4_() const
+{
+	std::string result;
+	for ( auto iter = ibegin(); iter != iend(); ++iter )
+	{
+		if ( !iter->is_black )
+		{
+			auto l = iter->left;
+			auto r = iter->left;
+			bool childs_are_black = ( l == nullptr || l->is_black ) && ( r == nullptr || r->is_black );
+			if ( !childs_are_black )
+			{
+				std::string msg( "Property 4 is violated: Node with key " );
+				msg += std::to_string( iter->key );
+				msg += " has red child.\n";
+				result.append( msg );
+			}
+		}
+	}
+	return result;
+}
+
+std::string Map::check_red_black_tree_property_5_() const
+{
+	std::vector<std::pair<int, unsigned>> black_heights;
+	for ( auto iter = ibegin(); iter != iend(); ++iter )
+	{
+		if ( iter->left == nullptr || iter->right == nullptr )
+		{
+			unsigned black_counter = 0;
+			auto current = &*iter;
+			while ( current != nullptr )
+			{
+				if ( current->is_black )
+				{
+					++black_counter;
+				}
+				current = current->parent;
+			}
+			black_heights.push_back( { iter->key, black_counter } );
+		}
+	}
+
+	if ( black_heights.size() < 2 )
+	{
+		return {};
+	}
+
+	for ( auto pair : black_heights )
+	{
+		if ( pair.second != black_heights[0].second )
+		{
+			std::string msg( "Property 5 is violated: black heights for next nodes (key-height): " );
+			for ( size_t i = 0; i < black_heights.size(); ++i )
+			{
+				auto pair = black_heights[i];
+				auto sep = ( i != black_heights.size() - 1 ) ? ", " : "\n";
+				msg += "(" + std::to_string( pair.first ) + "-" + std::to_string( pair.second ) + ")" + sep;
+			}
+			break;
+		}
+	}
+	return {};
+}
+
+std::string Map::check_red_black_tree_properties() const
 {
 	/*
 	Properties of red-black tree:
@@ -495,6 +611,26 @@ std::string Map::check_rb_tree()
 	{
 		result.append( "Property 2 is violated: Root is not black.\n" );
 	}
+
+	result += check_red_black_tree_property_4_();
+	result += check_red_black_tree_property_5_();
+	return result;
+}
+
+unsigned Map::get_black_height() const
+{
+	if ( root_ == nullptr )
+	{
+		return 0;
+	}
+	auto current = root_;
+	unsigned black_node_counter = 1;
+	while ( current->left != nullptr )
+	{
+		current = current->left;
+		++black_node_counter;
+	}
+	return black_node_counter;
 }
 
 } // namespace EK
