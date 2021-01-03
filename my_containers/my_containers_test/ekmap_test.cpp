@@ -63,6 +63,20 @@ TEST( ekmap, reversed_iteration )
 	EXPECT_EQ( counter, -1 );
 }
 
+TEST( ekmap, insertion_rb_check )
+{
+	std::vector<std::pair<int, std::string>> pairs =
+		{ { 1, "Aharon" }, { 8, "Baruch" }, { 2, "Sarah" }, { 4, "Ichak" },
+		{ 13, "Esther" }, { 6, "Rachael" }, { 0, "Caleb" }, { 3, "Mendel" } };
+	EK::Map m;
+	EXPECT_TRUE( m.check_red_black_tree_properties().empty() );
+	for ( auto pair : pairs )
+	{
+		m.insert( pair );
+		EXPECT_TRUE( m.check_red_black_tree_properties().empty() );
+	}
+}
+
 TEST( ekmap, erase )
 {
 	auto m = EK::Map();

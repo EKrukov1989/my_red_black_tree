@@ -26,6 +26,8 @@ struct Map::Node
 		this->is_black = is_black;
 		this->value = value;
 	}
+
+	bool is_red() { return !is_black; }
 };
 
 class Map::InternIter
@@ -256,7 +258,7 @@ std::string Map::at( int key ) const
 
 std::size_t Map::size() const
 {
-	return counter;
+	return counter_;
 }
 
 Map::Node * Map::find_( int key ) const
@@ -267,52 +269,6 @@ Map::Node * Map::find_( int key ) const
 		current = ( current->key > key ) ? current->left : current->right;
 	}
 	return current;
-}
-
-void Map::insert( int key, const std::string& value )
-{
-	if ( root_ == nullptr )
-	{
-		auto newNode = new Node( nullptr, nullptr, nullptr,
-									key, true, value );
-		root_ = newNode;
-		++counter;
-		return;
-	}
-
-	auto current = root_;
-	while ( true )
-	{
-		if ( current->key == key )
-		{
-			current->value = value;
-			break;
-		}
-		else if ( current->key > key )
-		{
-			if ( current->left == nullptr )
-			{
-				auto newNode = new Node( current, nullptr, nullptr,
-											key, true, value );
-				current->left = newNode;
-				++counter;
-				break;
-			}
-			current = current->left;
-		}
-		else
-		{
-			if ( current->right == nullptr )
-			{
-				auto newNode = new Node( current, nullptr, nullptr,
-											key, true, value );
-				current->right = newNode;
-				++counter;
-				break;
-			}
-			current = current->right;
-		}
-	}
 }
 
 void Map::insert( const std::pair<int, std::string>& key_value_pair )
@@ -527,10 +483,10 @@ std::string Map::check_red_black_tree_property_4_() const
 	std::string result;
 	for ( auto iter = ibegin(); iter != iend(); ++iter )
 	{
-		if ( !iter->is_black )
+		if ( iter->is_red() )
 		{
 			auto l = iter->left;
-			auto r = iter->left;
+			auto r = iter->right;
 			bool childs_are_black = ( l == nullptr || l->is_black ) && ( r == nullptr || r->is_black );
 			if ( !childs_are_black )
 			{
@@ -574,14 +530,14 @@ std::string Map::check_red_black_tree_property_5_() const
 	{
 		if ( pair.second != black_heights[0].second )
 		{
-			std::string msg( "Property 5 is violated: black heights for next nodes (key-height): " );
+			std::string msg( "Property 5 is violated: black heights for nodes (key-height): " );
 			for ( size_t i = 0; i < black_heights.size(); ++i )
 			{
 				auto pair = black_heights[i];
 				auto sep = ( i != black_heights.size() - 1 ) ? ", " : "\n";
 				msg += "(" + std::to_string( pair.first ) + "-" + std::to_string( pair.second ) + ")" + sep;
 			}
-			break;
+			return msg;
 		}
 	}
 	return {};
@@ -607,7 +563,7 @@ std::string Map::check_red_black_tree_properties() const
 	}
 
 	std::string result;
-	if ( !root_->is_black )
+	if ( root_->is_red() )
 	{
 		result.append( "Property 2 is violated: Root is not black.\n" );
 	}
@@ -633,4 +589,206 @@ unsigned Map::get_black_height() const
 	return black_node_counter;
 }
 
+Map::Node * Map::insert_( int key, const std::string& value )
+{
+	// just insert node in binary tree and mark it as red
+	if ( root_ == nullptr )
+	{
+		auto newNode = new Node( nullptr, nullptr, nullptr,
+								 key, false, value );
+		root_ = newNode;
+		return newNode;
+	}
+
+	auto current = root_;
+	while ( true )
+	{
+		if ( current->key == key )
+		{
+			current->value = value;
+			return nullptr;
+		}
+		else if ( current->key > key )
+		{
+			if ( current->left == nullptr )
+			{
+				auto newNode = new Node( current, nullptr, nullptr,
+										 key, false, value );
+				current->left = newNode;
+				return newNode;
+			}
+			current = current->left;
+		}
+		else
+		{
+			if ( current->right == nullptr )
+			{
+				auto newNode = new Node( current, nullptr, nullptr,
+										 key, false, value );
+				current->right = newNode;
+				return newNode;
+			}
+			current = current->right;
+		}
+	}
+}
+
+Map::Node * Map::get_grandparent_( Node * node )
+{
+	return ( node->parent != nullptr ) ? node->parent->parent : nullptr;
+}
+
+Map::Node * Map::get_uncle_( Node * node )
+{
+	auto g = get_grandparent_( node );
+	if ( g == nullptr )
+	{
+		return nullptr;
+	}
+	return ( g->left == node->parent ) ? g->right : g->left;
+}
+
+void Map::left_rotate_( Node * node )
+{
+	auto rhs = node->right;
+	if ( node->parent != nullptr )
+	{
+		if ( node->parent->left == node->parent )
+		{
+			node->parent->left = rhs;
+		}
+		else
+		{
+			node->parent->right = rhs;
+		}
+	}
+	else
+	{
+		root_ = rhs;
+	}
+
+	rhs->parent = node->parent;
+
+	node->right = rhs->left;
+	if ( rhs->left != nullptr )
+	{
+		rhs->left->parent = node;
+	}
+
+	rhs->left= node;
+	node->parent = rhs;
+}
+
+void Map::right_rotate_( Node * node )
+{
+	auto lhs = node->left;
+	if ( node->parent != nullptr )
+	{
+		if ( node->parent->left == node->parent )
+		{
+			node->parent->left = lhs;
+		}
+		else
+		{
+			node->parent->right = lhs;
+		}
+	}
+	else
+	{
+		root_ = lhs;
+	}
+
+	lhs->parent = node->parent;
+
+	node->left = lhs->right;
+	if ( lhs->right != nullptr )
+	{
+		lhs->right->parent = node;
+	}
+
+	lhs->right = node;
+	node->parent = lhs;
+}
+
+void Map::insert_fixup_( Node * n )
+{
+	// case 1:
+	if ( n->parent == nullptr )
+	{
+		n->is_black = true;
+		return;
+	}
+	
+	// case 2:
+	if ( n->parent->is_black )
+	{
+		return;
+	}
+
+	auto p = n->parent; // must be != nullptr and must be red
+	auto g = n->parent->parent; // must be != nullptr and must be black
+	auto u = get_uncle_( n ); // may be == nullptr
+
+	// we assume that p is red
+	// case 3:
+	if ( u != nullptr && u->is_red() )
+	{
+		p->is_black = true;
+		u->is_black = true;
+		g->is_black = false;
+		insert_fixup_( g );
+		return;
+	}
+
+	// we assume that u is black (or nullptr).
+	// Next cases have suffixes L and R. L means that p is left child of g and vice versa.
+
+	// case 4L:
+	if ( p->right == n && g->left == p )
+	{
+		left_rotate_( p );
+		insert_fixup_( p );
+		return;
+	}
+
+	// case 4R:
+	if ( p->left == n && g->right == p )
+	{
+		right_rotate_( p );
+		insert_fixup_( p );
+		return;
+	}
+
+	// case 5L:
+	if ( p->left == n && g->left == p )
+	{
+		right_rotate_( g );
+		p->is_black = true;
+		g->is_black = false;
+		return;
+	}
+
+	// case 5R:
+	if ( p->right == n && g->right == p )
+	{
+		left_rotate_( g );
+		p->is_black = true;
+		g->is_black = false;
+		return;
+	}
+}
+
+void Map::insert( int key, const std::string& value )
+{
+	auto n = insert_( key, value );
+	if ( n != nullptr )
+	{
+		++counter_;
+		insert_fixup_( n );
+	}
+}
+
 } // namespace EK
+
+// TODO: consider moving static functions in nameless namespace
+// it requires usually move Node definition in the top... 

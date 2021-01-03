@@ -42,7 +42,7 @@ private:
 	class InternIter;
 	class CInternIter;
 	Node * root_ = nullptr;
-	std::size_t counter = 0;
+	std::size_t counter_ = 0;
 
 	Node * find_( int key ) const;
 	Node * get_minimum_() const;
@@ -58,6 +58,13 @@ private:
 	CInternIter iend() const;
 	CInternIter irbegin() const;
 	CInternIter irend() const;
+
+	Node * insert_( int key, const std::string& value );
+	void insert_fixup_( Node * n );
+	Node * get_grandparent_( Node * node );
+	Node * get_uncle_( Node * node );
+	void left_rotate_( Node * node );
+	void right_rotate_( Node * node );
 
 	static const Node * s_find_successor_in_right_branch_( const Node * node );
 	static const Node * s_find_predecessor_in_left_branch_( const Node * node );
