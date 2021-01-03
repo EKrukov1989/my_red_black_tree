@@ -77,6 +77,17 @@ TEST( ekmap, insertion_rb_check )
 	}
 }
 
+TEST( ekmap, find )
+{
+	const EK::Map m = { { 10, "Aharon" }, { 6, "Baruch" }, { 3, "Sarah" } };
+	EXPECT_EQ( m.find( 2 ), m.end() );
+	auto it6 = m.find( 6 );
+	EXPECT_EQ( it6->first, 6 );
+	EXPECT_EQ( it6->second, "Baruch" );
+	--it6;
+	EXPECT_EQ( it6, m.begin());
+}
+
 TEST( ekmap, erase )
 {
 	auto m = EK::Map();

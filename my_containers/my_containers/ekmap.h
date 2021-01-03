@@ -33,6 +33,9 @@ public:
 	CIterator rbegin() const;
 	CIterator rend() const;
 
+	Iterator find( int key );
+	CIterator find( int key ) const;
+
 	std::string get_debug_output() const;
 	std::string check_red_black_tree_properties() const;
 	unsigned get_black_height() const;

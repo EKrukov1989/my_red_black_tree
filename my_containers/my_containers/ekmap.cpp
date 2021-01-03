@@ -238,6 +238,18 @@ Map::CIterator Map::end() const { return CIterator( iend() ); }
 Map::CIterator Map::rbegin() const { return CIterator( irbegin() ); }
 Map::CIterator Map::rend() const { return CIterator( irend() ); }
 
+Map::Iterator Map::find( int key )
+{
+	auto node = find_( key );
+	return ( node != nullptr ) ? Iterator( InternIter( node ) ) : end();
+}
+
+Map::CIterator Map::find( int key ) const
+{
+	auto node = find_( key );
+	return ( node != nullptr ) ? CIterator( CInternIter( node ) ) : end();
+}
+
 std::size_t Map::count( int key ) const
 {
 	return static_cast<bool>( find_( key ) == nullptr );
@@ -323,64 +335,6 @@ void Map::transplant_( const Node * target, Node * to_transplant )
 		target->parent->right = to_transplant;
 	}
 	to_transplant->parent = target->parent;
-}
-
-void Map::erase( int key )
-{
-	//auto to_erase = find_( key );
-	//if ( to_erase == nullptr )
-	//{
-	//	return;
-	//}
-
-	//auto current = node;
-	//if ( node->right != nullptr )
-	//{
-	//	current = node->right;
-	//	while ( current->left != nullptr )
-	//	{
-	//		current = current->left;
-	//	}
-	//}
-	//else
-	//{
-	//	while ( current != nullptr && current->key <= node->key )
-	//	{
-	//		current = current->parent;
-	//	}
-	//}
-
-	//return current;
-
-	//auto successor = find_successor_( to_erase );
-	//if ( successor == nullptr )
-	//{
-	//	auto left_node = to_erase->left;
-	//	if ( left_node == nullptr )
-	//	{
-	//		if ( to_erase->parent->left == to_erase )
-	//		{
-	//			to_erase->parent->left = nullptr;
-	//		}
-	//		else
-	//		{
-	//			to_erase->parent->right = nullptr;
-	//		}
-	//	}
-
-	//	left_node->parent = to_erase->parent;
-	//	if ( to_erase->parent != nullptr )
-	//	{
-	//		if ( to_erase->parent->left == to_erase )
-	//		{
-	//			to_erase->parent->left = left_node;
-	//		}
-	//		else
-	//		{
-	//			to_erase->parent->right = left_node;
-	//		}
-	//	}
-	//}
 }
 
 const Map::Node * Map::s_find_successor_in_right_branch_( const Node * node )
@@ -786,6 +740,11 @@ void Map::insert( int key, const std::string& value )
 		++counter_;
 		insert_fixup_( n );
 	}
+}
+
+void Map::erase( int key )
+{
+
 }
 
 } // namespace EK
