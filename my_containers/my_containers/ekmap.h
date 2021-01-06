@@ -8,9 +8,79 @@ namespace EK
 
 class Map
 {
+private:
+	struct Node;
+
+	class InternIter
+	{
+		// Internal interator provides access to nodes directly.
+		// It's required for a few private methods. As well it is a basis for external iterators.
+	public:
+		explicit InternIter( Node * );
+		InternIter& operator++();
+		InternIter& operator--();
+		bool operator==( InternIter ) const;
+		bool operator!=( InternIter ) const;
+		Map::Node& operator*();
+		Map::Node * operator->();
+	private:
+		Node * node_ = nullptr;
+	};
+
+	class CInternIter
+	{
+	public:
+		explicit CInternIter( Node * );
+		CInternIter& operator++();
+		CInternIter& operator--();
+		bool operator==( CInternIter ) const;
+		bool operator!=( CInternIter ) const;
+		Map::Node& operator*();
+		Map::Node * operator->();
+	private:
+		Node * node_ = nullptr;
+	};
+
 public:
-	class Iterator;
-	class CIterator;
+	class Iterator
+	{
+		friend class Map;
+	public:
+		Iterator& operator++() { ++iter_; return *this; }
+		Iterator& operator--() { --iter_; return *this; }
+		bool operator==( Iterator other ) const { return iter_ == other.iter_; }
+		bool operator!=( Iterator other ) const { return !( *this == other ); }
+		std::pair<int, std::string&> operator*();
+		std::unique_ptr<std::pair<int, std::string&>> operator->();
+	private:
+		InternIter iter_;
+		explicit Iterator( InternIter intern_iter ) : iter_( intern_iter ) {}
+	};
+
+	class CIterator
+	{
+		friend class Map;
+	public:
+		CIterator& operator++() { ++iter_; return *this; }
+		CIterator& operator--() { --iter_; return *this; }
+		bool operator==( CIterator other ) const { return iter_ == other.iter_; }
+		bool operator!=( CIterator other ) const { return !( *this == other ); }
+		std::pair<int, const std::string&> operator*();
+		std::unique_ptr<std::pair<int, const std::string&>> operator->();
+	private:
+		CInternIter iter_;
+		explicit CIterator( CInternIter iter ) : iter_( iter ) {}
+	};
+
+	Iterator begin();
+	Iterator end();
+	Iterator rbegin();
+	Iterator rend();
+	CIterator begin() const;
+	CIterator end() const;
+	CIterator rbegin() const;
+	CIterator rend() const;
+
 	Map();
 	Map( const std::vector<std::pair<int, std::string>>& );
 	Map( const std::initializer_list<std::pair<int, std::string>>& );
@@ -24,15 +94,6 @@ public:
 	void insert( const std::pair<int, std::string>& key_value_pair );
 	void erase( int key );
 
-	Iterator begin();
-	Iterator end();
-	Iterator rbegin();
-	Iterator rend();
-	CIterator begin() const;
-	CIterator end() const;
-	CIterator rbegin() const;
-	CIterator rend() const;
-
 	Iterator find( int key );
 	CIterator find( int key ) const;
 
@@ -41,43 +102,45 @@ public:
 	unsigned get_black_height() const;
 
 private:
-	struct Node;
-	class InternIter;
-	class CInternIter;
 	Node * root_ = nullptr;
 	std::size_t counter_ = 0;
+
+	InternIter ibegin_();
+	InternIter iend_();
+	InternIter irbegin_();
+	InternIter irend_();
+	CInternIter ibegin_() const;
+	CInternIter iend_() const;
+	CInternIter irbegin_() const;
+	CInternIter irend_() const;
 
 	Node * find_( int key ) const;
 	Node * get_minimum_() const;
 	Node * get_maximum_() const;
-	void transplant_( const Node * target, Node * to_transplant );
-	std::string format_line_( const Node * ) const;
 
-	InternIter ibegin();
-	InternIter iend();
-	InternIter irbegin();
-	InternIter irend();
-	CInternIter ibegin() const;
-	CInternIter iend() const;
-	CInternIter irbegin() const;
-	CInternIter irend() const;
-
-	Node * insert_( int key, const std::string& value );
-	void insert_fixup_( Node * n );
-	Node * get_grandparent_( Node * node );
-	Node * get_uncle_( Node * node );
 	void left_rotate_( Node * node );
 	void right_rotate_( Node * node );
-
-	static const Node * s_find_successor_in_right_branch_( const Node * node );
-	static const Node * s_find_predecessor_in_left_branch_( const Node * node );
-	static const Node * s_find_successor_( const Node * node );
-	static const Node * s_find_predecessor_( const Node * node );
-	static Node * s_find_successor_( Node * node );
-	static Node * s_find_predecessor_( Node * node );
-
+	void swap_( Node * a, Node * b );
+	void insert_fixup_( Node * n );
+	Node * insert_( int key, const std::string& value );
+	void remove_node_without_childs_( Node * node );
+	void erase_one_child_node_( Node * node );
+	void erase_fixup_( Node * node );
 	std::string check_red_black_tree_property_4_() const;
 	std::string check_red_black_tree_property_5_() const;
+
+	static Node * s_get_grandparent_( Node * node );
+	static Node * s_get_sibling_( Node * node );
+	static Node * s_get_uncle_( Node * node );
+	static Node * s_get_minimum_( Node * );
+	static const Node * s_get_minimum_( const Node * );
+	static Node * s_get_maximum_( Node * );
+	static const Node * s_get_maximum_( const Node * );
+	static Node * s_find_successor_( Node * node );
+	static const Node * s_find_successor_( const Node * node );
+	static Node * s_find_predecessor_( Node * node );
+	static const Node * s_find_predecessor_( const Node * node );
+	static std::string s_format_line_( const Node * );
 };
 
 } // namespace EK

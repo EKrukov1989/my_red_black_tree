@@ -1,6 +1,58 @@
 #include "pch.h"
+
 #include "../my_containers/ekmap.h"
 #include "../my_containers/ekmap.cpp"
+
+namespace
+{
+
+std::vector<int> s_get_random_order( unsigned n )
+{
+	// returns n numbers in interval [0..n) without repetitions
+	// example for n ==5: -> { 3, 0, 2, 4, 1 }
+
+	std::srand( 10 );
+	std::vector<int> r_order;
+	r_order.resize( n, -1 );
+	for ( int i = 0; i < n; ++i )
+	{
+		while ( true )
+		{
+			int r = std::rand() % n;
+			bool exists = false;
+			for ( auto elt : r_order )
+			{
+				if ( elt == r )
+				{
+					exists = true;
+					break;
+				}
+			}
+
+			if ( !exists )
+			{
+				r_order[i] = r;
+				break;
+			}
+		}
+	}
+	return r_order;
+}
+
+void s_erase_elt_from_list( std::list<std::pair<int, std::string>>& list, int key )
+{
+	for ( auto iter = list.begin(); iter != list.end(); ++iter )
+	{
+		if ( iter->first == key )
+		{
+			list.erase( iter );
+			return;
+		}
+	}
+	assert( false );
+}
+
+} // nameless namespace
 
 TEST(ekmap, insertion )
 {
@@ -88,7 +140,7 @@ TEST( ekmap, find )
 	EXPECT_EQ( it6, m.begin());
 }
 
-TEST( ekmap, erase )
+TEST( ekmap, simple_erase )
 {
 	auto m = EK::Map();
 	m.insert( 2, "Aharon" );
@@ -105,3 +157,39 @@ TEST( ekmap, erase )
 	EXPECT_EQ( m.at( 4 ), "Sarah" );
 }
 
+TEST( ekmap, multi_erase )
+{
+	std::list<std::pair<int, std::string>> control_list;
+	auto m = EK::Map();
+	size_t n = 100;
+	for ( int i = 0; i < n; ++i )
+	{
+		auto pair = std::make_pair( i, std::to_string( i * 100 ) );
+		control_list.push_back( pair );
+		m.insert( pair );
+	}
+
+	auto r_order = s_get_random_order( n );
+
+	for ( int i = 0; i < n; ++i )
+	{
+		if ( i ==  5)
+		{
+			std::cout << "&";
+		}
+
+		EXPECT_EQ( m.size(), n - i );
+		int key = r_order[i];
+		m.erase( key );
+		s_erase_elt_from_list( control_list, key );
+		auto clist_iter = control_list.begin();
+		for ( auto& map_pair : m )
+		{
+			EXPECT_EQ( map_pair.first, clist_iter->first);
+			EXPECT_EQ( map_pair.second, clist_iter->second );
+			++clist_iter;
+		}
+		EXPECT_TRUE( m.check_red_black_tree_properties().empty() );
+	}
+	EXPECT_EQ( m.size(), 0 );
+}
