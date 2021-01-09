@@ -84,6 +84,8 @@ public:
 	Map();
 	Map( const std::vector<std::pair<int, std::string>>& );
 	Map( const std::initializer_list<std::pair<int, std::string>>& );
+	Map( Map& rhs );
+	Map& operator=( const Map& rhs );
 	~Map();
 
 	std::size_t count( int key ) const;
@@ -129,6 +131,7 @@ private:
 	std::string check_red_black_tree_property_4_() const;
 	std::string check_red_black_tree_property_5_() const;
 
+	static Node * s_copy_tree_( Node * n );
 	static Node * s_get_grandparent_( Node * node );
 	static Node * s_get_sibling_( Node * node );
 	static Node * s_get_uncle_( Node * node );
@@ -144,3 +147,6 @@ private:
 };
 
 } // namespace EK
+
+// TODO: add move constructor and move assignment operator
+// TODO: make sure that insertion from rvalue use move semantics

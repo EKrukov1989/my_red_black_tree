@@ -193,3 +193,41 @@ TEST( ekmap, multi_erase )
 	}
 	EXPECT_EQ( m.size(), 0 );
 }
+
+TEST( ekmap, copy_constructor )
+{
+	const std::vector<std::pair<int, std::string>> control =
+		{ { 3, "Aharon" }, { 6, "Baruch" }, { 10, "Sarah" } }; // must be ordered by key
+	EK::Map m1( control );
+	const EK::Map m2( m1 );
+	// changes of m1 must not apply on m2 anymore:
+	m1.erase( 6 ); 
+	auto control_iter = control.begin();
+	for ( auto& pair : m2 )
+	{
+		EXPECT_EQ( pair.first, control_iter->first );
+		EXPECT_EQ( pair.second, control_iter->second );
+		++control_iter;
+	}
+	EXPECT_EQ( control_iter, control.end());
+}
+
+TEST( ekmap, assignment_operator )
+{
+	const std::vector<std::pair<int, std::string>> control =
+		{ { 3, "Aharon" }, { 6, "Baruch" }, { 10, "Sarah" } }; // must be ordered by key
+	EK::Map m1( control );
+	auto m2 = EK::Map();
+	m2 = m1;
+	// changes of m1 must not apply on m2 anymore:
+	m1.erase( 6 );
+
+	auto control_iter = control.begin();
+	for ( auto& pair : m2 )
+	{
+		EXPECT_EQ( pair.first, control_iter->first );
+		EXPECT_EQ( pair.second, control_iter->second );
+		++control_iter;
+	}
+	EXPECT_EQ( control_iter, control.end() );
+}

@@ -219,6 +219,19 @@ Map::Map( const std::initializer_list<std::pair<int, std::string>>& list )
 	}
 }
 
+Map::Map( Map& rhs )
+{
+	root_ = s_copy_tree_( rhs.root_ );
+	counter_ = rhs.counter_;
+}
+
+Map& Map::operator=( const Map& rhs )
+{
+	root_ = s_copy_tree_( rhs.root_ );
+	counter_ = rhs.counter_;
+	return *this;
+}
+
 Map::~Map()
 {
 }
@@ -853,6 +866,26 @@ std::string Map::check_red_black_tree_property_5_() const
 		}
 	}
 	return {};
+}
+
+Map::Node * Map::s_copy_tree_( Node* n )
+{
+	auto * n_copy = new Node( nullptr, nullptr, nullptr, n->key, n->is_black, n->value );
+
+	if ( n->left != nullptr )
+	{
+		auto * left_copy = s_copy_tree_( n->left ); // left_copy - the root of n left subtree copy
+		left_copy->parent = n_copy;
+		n_copy->left = left_copy;
+	}
+
+	if ( n->right != nullptr )
+	{
+		auto * right_copy = s_copy_tree_( n->right ); // right_copy - the root of n right subtree copy
+		right_copy->parent = n_copy;
+		n_copy->right = right_copy;
+	}
+	return n_copy;
 }
 
 Map::Node * Map::s_get_grandparent_( Node * node )
