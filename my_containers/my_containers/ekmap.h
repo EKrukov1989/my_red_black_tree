@@ -46,30 +46,30 @@ public:
 	{
 		friend class Map;
 	public:
-		Iterator& operator++() { ++iter_; return *this; }
-		Iterator& operator--() { --iter_; return *this; }
-		bool operator==( Iterator other ) const { return iter_ == other.iter_; }
-		bool operator!=( Iterator other ) const { return !( *this == other ); }
+		Iterator& operator++();
+		Iterator& operator--();
+		bool operator==( Iterator other ) const;
+		bool operator!=( Iterator other ) const;
 		std::pair<int, std::string&> operator*();
 		std::unique_ptr<std::pair<int, std::string&>> operator->();
 	private:
 		InternIter iter_;
-		explicit Iterator( InternIter intern_iter ) : iter_( intern_iter ) {}
+		explicit Iterator( InternIter intern_iter );
 	};
 
 	class CIterator
 	{
 		friend class Map;
 	public:
-		CIterator& operator++() { ++iter_; return *this; }
-		CIterator& operator--() { --iter_; return *this; }
-		bool operator==( CIterator other ) const { return iter_ == other.iter_; }
-		bool operator!=( CIterator other ) const { return !( *this == other ); }
+		CIterator& operator++();
+		CIterator& operator--();
+		bool operator==( CIterator other ) const;
+		bool operator!=( CIterator other ) const;
 		std::pair<int, const std::string&> operator*();
 		std::unique_ptr<std::pair<int, const std::string&>> operator->();
 	private:
 		CInternIter iter_;
-		explicit CIterator( CInternIter iter ) : iter_( iter ) {}
+		explicit CIterator( CInternIter iter );
 	};
 
 	Iterator begin();

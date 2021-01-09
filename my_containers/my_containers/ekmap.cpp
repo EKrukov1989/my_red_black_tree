@@ -128,6 +128,32 @@ Map::Node * Map::CInternIter::operator->()
 	return node_;
 }
 
+Map::Iterator& Map::Iterator::operator++()
+{
+	++iter_;
+	return *this;
+}
+
+Map::Iterator& Map::Iterator::operator--()
+{ 
+	--iter_;
+	return *this;
+}
+
+bool Map::Iterator::operator==( Iterator other ) const
+{
+	return iter_ == other.iter_;
+}
+
+bool Map::Iterator::operator!=( Iterator other ) const
+{
+	return !( *this == other );
+}
+
+Map::Iterator::Iterator( InternIter intern_iter ) : iter_( intern_iter )
+{
+}
+
 std::pair<int, std::string&> Map::Iterator::operator*()
 {
 	return { iter_->key, iter_->value };
@@ -136,6 +162,30 @@ std::pair<int, std::string&> Map::Iterator::operator*()
 std::unique_ptr<std::pair<int, std::string&>> Map::Iterator::operator->()
 {
 	return std::make_unique<std::pair<int, std::string&>>( iter_->key, iter_->value );
+}
+
+Map::CIterator& Map::CIterator::operator++()
+{
+	++iter_; return *this;
+}
+
+Map::CIterator& Map::CIterator::operator--()
+{
+	--iter_; return *this;
+}
+
+bool Map::CIterator::operator==( CIterator other ) const
+{ 
+	return iter_ == other.iter_;
+}
+
+bool Map::CIterator::operator!=( CIterator other ) const
+{
+	return !( *this == other );
+}
+
+Map::CIterator::CIterator( CInternIter iter ) : iter_( iter )
+{
 }
 
 std::pair<int, const std::string&> Map::CIterator::operator*()
