@@ -232,6 +232,24 @@ Map& Map::operator=( const Map& rhs )
 	return *this;
 }
 
+Map::Map( Map&& rhs )
+{
+	root_ = rhs.root_;
+	counter_ = rhs.counter_;
+
+	rhs.root_ = nullptr;
+	rhs.counter_ = 0;
+}
+
+Map& Map::operator=( Map&& rhs )
+{
+	root_ = rhs.root_;
+	counter_ = rhs.counter_;
+	rhs.root_ = nullptr;
+	rhs.counter_ = 0;
+	return *this;
+}
+
 Map::~Map()
 {
 }

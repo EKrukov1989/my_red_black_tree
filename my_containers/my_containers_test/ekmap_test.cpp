@@ -231,3 +231,46 @@ TEST( ekmap, assignment_operator )
 	}
 	EXPECT_EQ( control_iter, control.end() );
 }
+
+TEST( ekmap, move_copy )
+{
+	const std::vector<std::pair<int, std::string>> control =
+		{ { 3, "Aharon" }, { 6, "Baruch" }, { 10, "Sarah" } }; // must be ordered by key
+
+	EK::Map m1( control );
+	const EK::Map m2( std::move( m1 ) );
+
+	EXPECT_EQ( m1.size(), 0 );
+	EXPECT_EQ( m1.begin(), m1.end() );
+
+	auto control_iter = control.begin();
+	for ( auto& pair : m2 )
+	{
+		EXPECT_EQ( pair.first, control_iter->first );
+		EXPECT_EQ( pair.second, control_iter->second );
+		++control_iter;
+	}
+	EXPECT_EQ( control_iter, control.end() );
+}
+
+TEST( ekmap, move_assignment_op )
+{
+	const std::vector<std::pair<int, std::string>> control =
+	{ { 3, "Aharon" }, { 6, "Baruch" }, { 10, "Sarah" } }; // must be ordered by key
+
+	EK::Map m1( control );
+	auto m2 = EK::Map();
+	m2 = std::move( m1 );
+
+	EXPECT_EQ( m1.size(), 0 );
+	EXPECT_EQ( m1.begin(), m1.end() );
+
+	auto control_iter = control.begin();
+	for ( auto& pair : m2 )
+	{
+		EXPECT_EQ( pair.first, control_iter->first );
+		EXPECT_EQ( pair.second, control_iter->second );
+		++control_iter;
+	}
+	EXPECT_EQ( control_iter, control.end() );
+}

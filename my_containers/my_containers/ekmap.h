@@ -86,6 +86,8 @@ public:
 	Map( const std::initializer_list<std::pair<int, std::string>>& );
 	Map( Map& rhs );
 	Map& operator=( const Map& rhs );
+	Map( Map&& rhs );
+	Map& operator=( Map&& rhs );
 	~Map();
 
 	std::size_t count( int key ) const;
@@ -148,5 +150,4 @@ private:
 
 } // namespace EK
 
-// TODO: add move constructor and move assignment operator
 // TODO: make sure that insertion from rvalue use move semantics
