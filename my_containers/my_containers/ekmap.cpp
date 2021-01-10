@@ -1,6 +1,7 @@
 #include "ekmap.h"
 #include <cstdio>
 #include <stdexcept>
+#include <utility>
 
 namespace EK
 {
@@ -16,16 +17,12 @@ struct Map::Node
 
 	Node() = default;
 
-	Node( Node * parent, Node * left, Node * right,
-			 int key, bool is_black, const std::string& value )
-	{
-		this->parent = parent;
-		this->left = left;
-		this->right = right;
-		this->key = key;
-		this->is_black = is_black;
-		this->value = value;
-	}
+	Node( Node * parent, Node * left, Node * right, int key, bool is_black, const std::string& value )
+		: parent( parent ), left( left ), right( right ), key( key ), is_black( is_black ), value( value ) {}
+
+	Node( Node * parent, Node * left, Node * right, int key, bool is_black, std::string&& value )
+		: parent( parent ), left( left ), right( right ), key( key ), is_black( is_black ),
+		value( std::move( value ) ) {}
 
 	bool is_red() { return !is_black; }
 };
@@ -295,9 +292,10 @@ std::size_t Map::size() const
 	return counter_;
 }
 
-void Map::insert( int key, const std::string& value )
+template<typename ValueType>
+void Map::t_insert_( int key, ValueType&& value )
 {
-	auto n = insert_( key, value );
+	auto n = t_insert_node_( key, std::forward<ValueType>( value ) );
 	if ( n != nullptr )
 	{
 		++counter_;
@@ -305,9 +303,24 @@ void Map::insert( int key, const std::string& value )
 	}
 }
 
+void Map::insert( int key, const std::string& value )
+{
+	t_insert_( key, value );
+}
+
+void Map::insert( int key, std::string&& value )
+{
+	t_insert_( key, std::move( value ) );
+}
+
 void Map::insert( const std::pair<int, std::string>& key_value_pair )
 {
 	insert( key_value_pair.first, key_value_pair.second );
+}
+
+void Map::insert( std::pair<int, std::string>&& key_value_pair )
+{
+	insert( key_value_pair.first, std::move( key_value_pair.second ) );
 }
 
 void Map::erase( int key )
@@ -641,50 +654,6 @@ void Map::insert_fixup_( Node * n )
 	}
 }
 
-Map::Node * Map::insert_( int key, const std::string& value )
-{
-	// just insert node in binary tree and mark it as red
-	if ( root_ == nullptr )
-	{
-		auto newNode = new Node( nullptr, nullptr, nullptr,
-								 key, false, value );
-		root_ = newNode;
-		return newNode;
-	}
-
-	auto current = root_;
-	while ( true )
-	{
-		if ( current->key == key )
-		{
-			current->value = value;
-			return nullptr;
-		}
-		else if ( current->key > key )
-		{
-			if ( current->left == nullptr )
-			{
-				auto newNode = new Node( current, nullptr, nullptr,
-										 key, false, value );
-				current->left = newNode;
-				return newNode;
-			}
-			current = current->left;
-		}
-		else
-		{
-			if ( current->right == nullptr )
-			{
-				auto newNode = new Node( current, nullptr, nullptr,
-										 key, false, value );
-				current->right = newNode;
-				return newNode;
-			}
-			current = current->right;
-		}
-	}
-}
-
 void Map::remove_node_without_childs_( Node * node )
 {
 	if ( node->parent == nullptr )
@@ -884,6 +853,51 @@ std::string Map::check_red_black_tree_property_5_() const
 		}
 	}
 	return {};
+}
+
+template<typename ValueType>
+Map::Node * Map::t_insert_node_( int key, ValueType&& value )
+{
+	// just insert node in binary tree and mark it as red
+	if ( root_ == nullptr )
+	{
+		auto newNode = new Node( nullptr, nullptr, nullptr, key, false,
+								 std::forward<ValueType>( value ) );
+		root_ = newNode;
+		return newNode;
+	}
+
+	auto current = root_;
+	while ( true )
+	{
+		if ( current->key == key )
+		{
+			current->value = value;
+			return nullptr;
+		}
+		else if ( current->key > key )
+		{
+			if ( current->left == nullptr )
+			{
+				auto newNode = new Node( current, nullptr, nullptr, key, false,
+										 std::forward<ValueType>( value ) );
+				current->left = newNode;
+				return newNode;
+			}
+			current = current->left;
+		}
+		else
+		{
+			if ( current->right == nullptr )
+			{
+				auto newNode = new Node( current, nullptr, nullptr, key, false,
+										 std::forward<ValueType>( value ) );
+				current->right = newNode;
+				return newNode;
+			}
+			current = current->right;
+		}
+	}
 }
 
 Map::Node * Map::s_copy_tree_( Node* n )

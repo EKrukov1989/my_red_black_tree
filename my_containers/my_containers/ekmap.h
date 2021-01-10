@@ -95,7 +95,9 @@ public:
 	std::size_t size() const;
 
 	void insert( int key, const std::string& value );
+	void insert( int key, std::string&& value );
 	void insert( const std::pair<int, std::string>& key_value_pair );
+	void insert( std::pair<int, std::string>&& key_value_pair );
 	void erase( int key );
 
 	Iterator find( int key );
@@ -106,6 +108,9 @@ public:
 	unsigned get_black_height() const;
 
 private:
+	template<typename ValueType>
+	void t_insert_( int key, ValueType&& value);
+
 	Node * root_ = nullptr;
 	std::size_t counter_ = 0;
 
@@ -126,12 +131,14 @@ private:
 	void right_rotate_( Node * node );
 	void swap_( Node * a, Node * b );
 	void insert_fixup_( Node * n );
-	Node * insert_( int key, const std::string& value );
 	void remove_node_without_childs_( Node * node );
 	void erase_one_child_node_( Node * node );
 	void erase_fixup_( Node * node );
 	std::string check_red_black_tree_property_4_() const;
 	std::string check_red_black_tree_property_5_() const;
+
+	template<typename ValueType>
+	Node * t_insert_node_( int key, ValueType&& value );
 
 	static Node * s_copy_tree_( Node * n );
 	static Node * s_get_grandparent_( Node * node );

@@ -274,3 +274,23 @@ TEST( ekmap, move_assignment_op )
 	}
 	EXPECT_EQ( control_iter, control.end() );
 }
+
+TEST( ekmap, move_insertion )
+{
+	auto m = EK::Map();
+	std::string value = "Solomon";
+	m.insert( 7, std::move( value ) );
+	EXPECT_EQ( m.size(), 1 );
+	EXPECT_EQ( m.at( 7 ), "Solomon" );
+	EXPECT_EQ( value, "" );
+}
+
+TEST( ekmap, move_pair_insertion )
+{
+	auto m = EK::Map();
+	auto pair = std::make_pair<int, std::string>( 7, "Solomon" );
+	m.insert( std::move( pair ) );
+	EXPECT_EQ( m.size(), 1 );
+	EXPECT_EQ( m.at(7), "Solomon" );
+	EXPECT_EQ( pair.second, "" );
+}
