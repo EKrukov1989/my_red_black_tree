@@ -173,11 +173,6 @@ TEST( ekmap, multi_erase )
 
 	for ( int i = 0; i < n; ++i )
 	{
-		if ( i ==  5)
-		{
-			std::cout << "&";
-		}
-
 		EXPECT_EQ( m.size(), n - i );
 		int key = r_order[i];
 		m.erase( key );

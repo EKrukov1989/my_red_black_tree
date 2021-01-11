@@ -157,4 +157,3 @@ private:
 
 } // namespace EK
 
-// TODO: make sure that insertion from rvalue use move semantics
