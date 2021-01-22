@@ -1,4 +1,6 @@
 #include "pch.h"
+#include <functional>
+#include <random>
 
 #include "../my_containers/ekmap.h"
 #include "../my_containers/ekmap.cpp"
@@ -10,33 +12,15 @@ std::vector<int> s_get_random_order( unsigned n )
 {
 	// returns n numbers in interval [0..n) without repetitions
 	// example for n ==5: -> { 3, 0, 2, 4, 1 }
-
-	std::srand( 10 );
-	std::vector<int> r_order;
-	r_order.resize( n, -1 );
-	for ( int i = 0; i < n; ++i )
+	std::vector<int> order( n );
+	for ( int i = 0; i < order.size(); ++i )
 	{
-		while ( true )
-		{
-			int r = std::rand() % n;
-			bool exists = false;
-			for ( auto elt : r_order )
-			{
-				if ( elt == r )
-				{
-					exists = true;
-					break;
-				}
-			}
-
-			if ( !exists )
-			{
-				r_order[i] = r;
-				break;
-			}
-		}
+		order[i] = i;
 	}
-	return r_order;
+	auto gen = std::mt19937{ std::random_device{}( ) };
+	gen.seed( 0 );
+	std::shuffle( order.begin(), order.end(), gen );
+	return order;
 }
 
 void s_erase_elt_from_list( std::list<std::pair<int, std::string>>& list, int key )

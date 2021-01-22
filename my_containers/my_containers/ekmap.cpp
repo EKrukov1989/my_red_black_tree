@@ -229,7 +229,7 @@ Map& Map::operator=( const Map& rhs )
 	return *this;
 }
 
-Map::Map( Map&& rhs )
+Map::Map( Map&& rhs ) noexcept
 {
 	root_ = rhs.root_;
 	counter_ = rhs.counter_;
@@ -238,7 +238,7 @@ Map::Map( Map&& rhs )
 	rhs.counter_ = 0;
 }
 
-Map& Map::operator=( Map&& rhs )
+Map& Map::operator=( Map&& rhs ) noexcept
 {
 	root_ = rhs.root_;
 	counter_ = rhs.counter_;

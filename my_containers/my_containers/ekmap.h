@@ -86,8 +86,8 @@ public:
 	Map( const std::initializer_list<std::pair<int, std::string>>& );
 	Map( Map& rhs );
 	Map& operator=( const Map& rhs );
-	Map( Map&& rhs );
-	Map& operator=( Map&& rhs );
+	Map( Map&& rhs ) noexcept; 
+	Map& operator=( Map&& rhs ) noexcept;
 	~Map();
 
 	std::size_t count( int key ) const;
